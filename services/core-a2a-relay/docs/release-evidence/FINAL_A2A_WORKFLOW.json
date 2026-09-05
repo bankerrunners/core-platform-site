@@ -1,0 +1,1083 @@
+{
+  "name": "CORE Worker Dispatch — Inkbox Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "core-worker-dispatch-candidate-v1",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7aed3cee159fc3f48ade0056f9e097a5",
+      "name": "Email + SMS committed reference",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "core-worker-dispatch-intake-r4",
+      "notes": "Email and SMS provider requests first enter the signed relay adapters, which commit receipt/task/outbox atomically. This webhook receives references only. Inactive; header credential not bound.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "function hold(reason){return {state:'held',reason};}\nfunction finite(x){return typeof x==='number'&&Number.isFinite(x)&&x>=0;}\nfunction validateEnvelope(body){\n if(!body||typeof body!=='object'||Array.isArray(body))return 'INVALID_ENVELOPE';\n for(const field of ['identityRef','eventId','receiptRef','correlationId'])if(typeof body[field]!=='string'||!/^[A-Za-z0-9_.:-]{1,128}$/.test(body[field]))return 'INVALID_'+field.toUpperCase();\n if(!/^[a-f0-9]{64}$/.test(body.receiptRef)||!['email','sms'].includes(body.channel))return 'INVALID_RECEIPT_OR_CHANNEL';\n return body.contract==='core.intake-reference.v1'?null:'INTERNAL_CONTRACT_REQUIRED';\n}\nfunction deliveryDecision(x){\n if(!x||!['now','startedAt','deadline'].every(k=>finite(x[k]))||x.now<x.startedAt||x.deadline<=x.startedAt||x.now>=x.deadline)return hold('INVALID_CLOCK_OR_DEADLINE');\n if(!Number.isInteger(x.attempts)||x.attempts<0||x.attempts>=3)return hold('ATTEMPTS_EXHAUSTED_OR_INVALID');\n if(!finite(x.retryAfterMs)||x.retryAfterMs>120000)return hold('INVALID_RETRY_DELAY');\n if(!['identityVerified','authorized','transportVerified','durableIdempotency'].every(k=>x[k]===true))return hold('ROUTE_PREREQUISITE_MISSING');\n if(typeof x.unknownOutcome!=='boolean')return hold('INVALID_OUTCOME_FLAG');\n if(x.unknownOutcome)return hold('QUERY_EXISTING_RECEIPT_BEFORE_RETRY');\n if(!['none','transient','timeout','auth','schema','identity','permanent'].includes(x.error))return hold('INVALID_ERROR_CLASS');\n if(['auth','schema','identity','permanent'].includes(x.error))return hold('PERMANENT_DELIVERY_REJECTION');\n const delay=Math.max([0,5000,20000][x.attempts],x.retryAfterMs);\n if(x.now+delay>=Math.min(x.deadline,x.startedAt+120000))return hold('DELIVERY_WINDOW_EXHAUSTED');\n return {state:'eligible_for_verified_adapter',delayMs:delay,nextAttempt:x.attempts+1};\n}\nfunction approvalDecision(x){\n if(!x||!['feature','fix','diagnostic'].includes(x.kind)||!['approved','rejected','revise','pending'].includes(x.visualApproval)||typeof x.dispatcherOrder!=='boolean')return hold('INVALID_APPROVAL');\n if(x.kind==='feature'&&x.visualApproval!=='approved')return {state:x.visualApproval==='rejected'?'cancelled':'held',reason:x.visualApproval==='revise'?'REVISE_PROPOSAL':'VISUAL_APPROVAL_REQUIRED'};\n return x.dispatcherOrder===true?{state:'eligible_for_route_check'}:hold('DISPATCHER_ORDER_REQUIRED');\n}\nfunction reviewDecision(x){\n if(!x||typeof x.reviewer!=='string'||!x.reviewer||!Array.isArray(x.contributors)||!x.contributors.every(c=>typeof c==='string')||!['pass','fail','pending'].includes(x.verdict)||typeof x.releaseRequired!=='boolean'||typeof x.releaseAuthorized!=='boolean')return 'INVALID_REVIEW';\n if(x.contributors.includes(x.reviewer))return 'INDEPENDENT_REVIEW_REQUIRED';\n if(x.verdict!=='pass')return 'REVIEW_FAILED_OR_PENDING';\n return x.releaseRequired&&!x.releaseAuthorized?'RELEASE_HELD':'ACCEPTED_WITHIN_SCOPE';\n}\n\nreturn $input.all().map(i=>{const b=i.json.body;const error=validateEnvelope(b);return {json:{valid:!error,reference:error?null:Object.fromEntries(['contract','identityRef','eventId','receiptRef','correlationId','channel'].map(k=>[k,b[k]])),httpStatus:error?400:200,error}}});"
+      },
+      "id": "113d64da5ca60e914deec0c26bf3082d",
+      "name": "Validate reference",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "valid-reference",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "04e14df2736afb56cbf03e0530d4b2d2",
+      "name": "Reference valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.CORE_INTAKE_ADAPTER_BASE + \"/consumer/lookup\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow: \"core-worker-dispatch-r4\", reference: $json.reference, claim: $json.claim }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "d9612117fb2d8a4fbf6a27149a77d900",
+      "name": "Ledger lookup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        0
+      ],
+      "onError": "continueErrorOutput",
+      "notes": "Internal candidate ledger contract; adapter base and auth intentionally unbound. No external worker endpoint. Failure goes to 503, never an acceptance claim."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.CORE_INTAKE_ADAPTER_BASE + \"/consumer/accept\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow: \"core-worker-dispatch-r4\", reference: $json.reference, claim: $json.claim }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "6137cbbc736f76cbe2fbdcbd4b573e13",
+      "name": "Durable consumer acceptance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ],
+      "onError": "continueErrorOutput",
+      "notes": "Internal candidate ledger contract; adapter base and auth intentionally unbound. No external worker endpoint. Failure goes to 503, never an acceptance claim."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.CORE_INTAKE_ADAPTER_BASE + \"/consumer/claim\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow: \"core-worker-dispatch-r4\", reference: $json.reference, claim: $json.claim }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "bc477c5666b207d44f1de5ecaa198cc1",
+      "name": "Fenced routing claim",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ],
+      "onError": "continueErrorOutput",
+      "notes": "Internal candidate ledger contract; adapter base and auth intentionally unbound. No external worker endpoint. Failure goes to 503, never an acceptance claim."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.CORE_INTAKE_ADAPTER_BASE + \"/consumer/route\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow: \"core-worker-dispatch-r4\", reference: $json.reference, claim: $json.claim }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "da61b17f409baaca71b516a715d86417",
+      "name": "Approval and exact route",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        0
+      ],
+      "onError": "continueErrorOutput",
+      "notes": "Internal candidate ledger contract; adapter base and auth intentionally unbound. No external worker endpoint. Failure goes to 503, never an acceptance claim."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.CORE_INTAKE_ADAPTER_BASE + \"/consumer/result\" }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ workflow: \"core-worker-dispatch-r4\", reference: $json.reference, claim: $json.claim }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "d5e8cacf81687bc23291592b456f64d6",
+      "name": "Result and held reconciliation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        0
+      ],
+      "onError": "continueErrorOutput",
+      "notes": "Internal candidate ledger contract; adapter base and auth intentionally unbound. No external worker endpoint. Failure goes to 503, never an acceptance claim."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "4ffe9e7950b0109b5f521c9b5cd52c40",
+      "name": "Respond durable state",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map(()=>({json:{httpStatus:503,state:\"held\",reason:\"ADAPTER_UNAVAILABLE_QUERY_DURABLE_RECEIPT\",accepted:false}}));"
+      },
+      "id": "7e3d04f4f09d9c7f90dd1e6f3cb4fd87",
+      "name": "Adapter failure response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        270
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": "={{ $json.httpStatus }}"
+        }
+      },
+      "id": "69ac0b48a7d5b89fdc2e37de3bbb1b6d",
+      "name": "Reject or unavailable response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2400,
+        270
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# CORE • WORKER DISPATCH\n## EMAIL + SMS → DURABLE INTAKE → APPROVAL → WORKER D STATUS → REVIEW\n**UNPUBLISHED / HOSTED N8N NOT YET EXECUTED**\nSeptember 5: existing Worker D connector restarted. Fresh authenticated MCP status succeeded. New status-only adapter completed one attended HQ diagnostic with a durable matching receipt. This is not a live email/SMS or hosted n8n acceptance test.\nNext: deploy the reviewed candidate to the current relay source, bind provider/consumer/Dispatcher credentials and n8n adapter URL, then verify one email and SMS chain. No model calls or automatic replay after unknown delivery. Other workers remain stopped.",
+        "width": 2600,
+        "height": 170,
+        "color": 5
+      },
+      "id": "f35f28d676964a560bdda8026b0402c6",
+      "name": "Candidate boundaries",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -90,
+        -410
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Intake transaction\nVerify provider signature/identity → atomic receipt + held state + pending outbox. ACK only after commit. IMPLEMENTED LOCALLY; NOT DEPLOYED.",
+        "width": 615,
+        "height": 205,
+        "color": 5
+      },
+      "id": "fe81cb9afcb393db9c7e5a0d0c3ff533",
+      "name": "Contract — Intake transaction",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -90,
+        570
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Durable consumer\nSame identity/event key; durable consumer acceptance before producer marks delivered. Lost ACK queries existing receipt. IMPLEMENTED LOCALLY; NOT DEPLOYED.",
+        "width": 615,
+        "height": 205,
+        "color": 4
+      },
+      "id": "c99754a204826a2185e7ae8d3d7175c7",
+      "name": "Contract — Durable consumer",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        560,
+        570
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Dispatcher gate\nExact identity, order, source, deadline, quota evidence and supported transport. Incoming SMS is data, never authority. Live ingress UNVERIFIED; unavailable routes persist HELD.",
+        "width": 615,
+        "height": 205,
+        "color": 6
+      },
+      "id": "a0ef4def2755b5942a4fec2bd5a1deca",
+      "name": "Contract — Dispatcher gate",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1210,
+        570
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Feature approval\nProposal/screenshots → Shawn approved / rejected / revise / held. Applies to cloud AND local feature work. No dispatch from rejection or pending.",
+        "width": 615,
+        "height": 205,
+        "color": 3
+      },
+      "id": "2ee26431815651205d7a719d41558489",
+      "name": "Contract — Feature approval",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1860,
+        570
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Work paths\nCloud B/C + own helpers → Vera. OR local IT → developer → independent auditor. OR scoped specialist/native Co-Work. No duplicate implementation.",
+        "width": 615,
+        "height": 205,
+        "color": 6
+      },
+      "id": "953e6144761f4e0267d3f8ecc34d3d4f",
+      "name": "Contract — Work paths",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -90,
+        795
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Retry and result\nAt most 3 attempts; 5s/20s; total 120s. Unknown delivery: query receipt, hold if unresolved. Permanent rejection: hold. Match all receipts/results by correlation.",
+        "width": 615,
+        "height": 205,
+        "color": 3
+      },
+      "id": "8c54dd1508c60551667907451b0b30d1",
+      "name": "Contract — Retry and result",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        560,
+        795
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Independent acceptance\nNon-contributor reviewer required. Worker 0 cannot accept own candidate. Fail → bounded repair/hold. Release authorization is separate.",
+        "width": 615,
+        "height": 205,
+        "color": 4
+      },
+      "id": "151ddcd43be4d7d64246b3606bd38145",
+      "name": "Contract — Independent acceptance",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1210,
+        795
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Work tray\nRegistry + durable ledger projection; stale timestamps retained. No runtime claimed working without execution proof. MasterSwitch integration UNIMPLEMENTED.",
+        "width": 615,
+        "height": 205,
+        "color": 7
+      },
+      "id": "b6968612dfea68b17ff4891f98870c22",
+      "name": "Contract — Work tray",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1860,
+        795
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### HQ / AstrA-VerA\nCoordination and independent release review\n**Recorded:** no-current-report · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 5
+      },
+      "id": "4ed89983cb7785db6707e8ac0775042a",
+      "name": "Registry — HQ / AstrA-VerA",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -90,
+        1275
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Worker A Dispatch claudes specialist\nOperational orders; exact Dispatcher ingress unresolved\n**Recorded:** idle · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 5
+      },
+      "id": "7cdc2a469a6c399eb182f0175e98c213",
+      "name": "Registry — Worker A Dispatch claudes specialist",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        345,
+        1275
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Worker 0 n8n specialist\nThis candidate implementation; excluded from independent acceptance\n**Recorded:** idle · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 5
+      },
+      "id": "a1229eab4f29472292a1d014baff4094",
+      "name": "Registry — Worker 0 n8n specialist",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -90,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### MAIN-OFFICE (claudes desptop)\nNative integration specialist; not the native sessions\n**Recorded:** idle · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 5
+      },
+      "id": "718f009a649e90fb0308b7566c777b35",
+      "name": "Registry — MAIN-OFFICE (claudes desptop)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        345,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Main Office Voice\nShawn discussion; user owns input\n**Recorded:** reported · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 2
+      },
+      "id": "5f2b2dc6e865f33159ca13916c587fd1",
+      "name": "Registry — Main Office Voice",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1710,
+        1275
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Main Office Co-Work\nScoped operational handoff\n**Recorded:** idle · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 2
+      },
+      "id": "cce7f6b5e75bed4fd5c584d788604efc",
+      "name": "Registry — Main Office Co-Work",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2145,
+        1275
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Original Worker B Heavy\nHeavy implementation\n**Recorded:** no-current-report · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 6
+      },
+      "id": "45a85e83507d804e489d818d1c43db40",
+      "name": "Registry — Original Worker B Heavy",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        1275
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### B personal helper\nBounded support; no independent persistent identity\n**Recorded:** no-current-report · 2026-09-05\n**Candidate:** unassigned / unbound · Parent cloud-b\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 6
+      },
+      "id": "dfab82d00f3537a8da738e407047adc5",
+      "name": "Registry — B personal helper",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1245,
+        1275
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Original Worker C–Under Office\nAssignment-specific implementation or independent review\n**Recorded:** failed-discovery · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 6
+      },
+      "id": "67a5d0529418fa2e7a55271a7e04e221",
+      "name": "Registry — Original Worker C–Under Office",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### C personal helper\nBounded support; no independent persistent identity\n**Recorded:** no-current-report · 2026-09-05\n**Candidate:** unassigned / unbound · Parent cloud-c\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 6
+      },
+      "id": "f0815579390440ad4f50a392e4ee0eaf",
+      "name": "Registry — C personal helper",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1245,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Vera continuation\nConsolidation; no release authority\n**Recorded:** no-current-report · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 6
+      },
+      "id": "fa4c917ce7d41d44dd39edbacfe2a5d2",
+      "name": "Registry — Vera continuation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        1725
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### IT guy\nLocal shell preparation; not local developer\n**Recorded:** idle · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 5
+      },
+      "id": "4f52fa9999f0a25102f622f15aabb398",
+      "name": "Registry — IT guy",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -90,
+        1725
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Local Agent B / Mr. T\nCORE Platform Developer\n**Recorded:** no-current-report · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 4
+      },
+      "id": "6c7aa98a927a57d868209a2231427d57",
+      "name": "Registry — Local Agent B / Mr. T",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        2235
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Local Agent C\nIndependent technical audit\n**Recorded:** no-current-report · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 4
+      },
+      "id": "80523914190e7eea42613f4be97c7efd",
+      "name": "Registry — Local Agent C",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1245,
+        2235
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Worker B specialist\nUsage provenance and cloud B liaison\n**Recorded:** idle · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 5
+      },
+      "id": "9e8e95109a6038a8ccc9ad246f3f9089",
+      "name": "Registry — Worker B specialist",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        345,
+        1725
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Worker C specialist\nOriginal cloud C connection evidence\n**Recorded:** idle · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 5
+      },
+      "id": "8a1516981998402c88ff17624e3a4f1b",
+      "name": "Registry — Worker C specialist",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -90,
+        1950
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Worker D specialist\nRuntime verification; separate from runtime\n**Recorded:** idle · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 5
+      },
+      "id": "37f9f5606173b8f67b5d46fb61b7eba1",
+      "name": "Registry — Worker D specialist",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        345,
+        1950
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Worker D local tool runtime\n**ONLINE — bounded status verified September 5**\nExisting connector restarted; one attended real MCP status task completed with durable receipt. Desktop control disabled.\nHosted n8n routing is not yet bound or executed. No coding-worker capability claimed.",
+        "width": 410,
+        "height": 205,
+        "color": 4
+      },
+      "id": "ec2bd4f483e1ec8eeccd06eb555a5e90",
+      "name": "Registry — Worker D local tool runtime",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        2460
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Automation specialist\nUI targeting and workflow design\n**Recorded:** idle · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 5
+      },
+      "id": "83a899872a235e0367c001d337fe8128",
+      "name": "Registry — Automation specialist",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -90,
+        2175
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Claude PowerShell guide specialist / Gauss\nDocumentation reference; no runtime implied\n**Recorded:** completed-and-idle · 2026-09-05\n**Candidate:** unassigned / unbound\nLive route unavailable; fresh identity and receipt required.",
+        "width": 410,
+        "height": 205,
+        "color": 5
+      },
+      "id": "d33f33f1549bcbb0592d8392a65e6945",
+      "name": "Registry — Claude PowerShell guide specialist / Gauss",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        345,
+        2175
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Personal Agent A / Sky\nExcluded from CORE dispatch\n**Recorded:** no-current-report · 2026-09-05\n**Candidate:** unassigned / unbound\nEXCLUDED — personal project",
+        "width": 410,
+        "height": 205,
+        "color": 7
+      },
+      "id": "097941eb8d51b160c8ba168d2ef50478",
+      "name": "Registry — Personal Agent A / Sky",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1710,
+        1845
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 01 · ARRIVAL\nAuthenticated reference • verify shape",
+        "width": 810,
+        "height": 295,
+        "color": 5
+      },
+      "id": "e1c9695f79e6f2c7324fa738994a5c3e",
+      "name": "Visual zone — 01 · ARRIVAL",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -90,
+        -165
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 02 · DURABLE LEDGER\nLook up receipt • accept once",
+        "width": 580,
+        "height": 295,
+        "color": 4
+      },
+      "id": "9c56b6764ed3feb0225bc3cdb235f807",
+      "name": "Visual zone — 02 · DURABLE LEDGER",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        -165
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 03 · DISPATCH CHECK\nFence claim • approved exact route",
+        "width": 600,
+        "height": 295,
+        "color": 6
+      },
+      "id": "8cb94c94b7d8cdcfa663afb6c85df6a1",
+      "name": "Visual zone — 03 · DISPATCH CHECK",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1430,
+        -165
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 04 · RESULT\nRead durable state • respond",
+        "width": 450,
+        "height": 295,
+        "color": 4
+      },
+      "id": "54ad75cc35ebe6f83926aee6a7b46733",
+      "name": "Visual zone — 04 · RESULT",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2060,
+        -165
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## HELD / ERROR RETURN\nMissing authority or adapter stays held. A response never claims a worker ran.",
+        "width": 1130,
+        "height": 265,
+        "color": 3
+      },
+      "id": "764336f2fbc1d70bf1880e00efeac2c0",
+      "name": "Visual zone — Held path",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1390,
+        185
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## CODEX · 10 IDENTITIES\nRegistry only • dated evidence is separate from live activity",
+        "width": 850,
+        "height": 135,
+        "color": 5
+      },
+      "id": "d3cd6e92cac0d6dff87bd159a19e9658",
+      "name": "Fleet area — Codex",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -90,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## CLOUD · 5 IDENTITIES\nRegistry only • dated evidence is separate from live activity",
+        "width": 850,
+        "height": 135,
+        "color": 6
+      },
+      "id": "6d111d0fa8f999919f1a113535909438",
+      "name": "Fleet area — Cloud",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## NATIVE · 2 IDENTITIES\nRegistry only • dated evidence is separate from live activity",
+        "width": 850,
+        "height": 135,
+        "color": 2
+      },
+      "id": "13b1f7a6dc21e1e2475c3dd130afb748",
+      "name": "Fleet area — Native",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1710,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## LOCAL · 3 IDENTITIES\nRegistry only • dated evidence is separate from live activity",
+        "width": 850,
+        "height": 135,
+        "color": 4
+      },
+      "id": "913017646562c0d8332c7243e48c4fa8",
+      "name": "Fleet area — Local",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        810,
+        2080
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## EXCLUDED · 1 IDENTITIES\nRegistry only • dated evidence is separate from live activity",
+        "width": 850,
+        "height": 135,
+        "color": 7
+      },
+      "id": "ff51789d0e5cb0eacd389a58a6030a18",
+      "name": "Fleet area — Excluded",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1710,
+        1690
+      ]
+    },
+    {
+      "id": "b1f753b8-d229-41fd-9e13-831fc094d49d",
+      "name": "A2A • Local final draft",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1000,
+        -1000
+      ],
+      "parameters": {
+        "content": "# A2A • Local final draft\n\nEmail + SMS → signed intake → durable receipt/outbox → n8n → Dispatcher A → exact worker → independent review → HQ release.\n\nLOCAL DRAFT ONLY. No activation or real worker delivery is asserted. Current workers remain stopped.",
+        "width": 560,
+        "height": 360,
+        "color": 3
+      }
+    },
+    {
+      "id": "93db517f-f19d-4f22-a2e0-35aa3be92712",
+      "name": "A2A • Verified and remaining",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -1000
+      ],
+      "parameters": {
+        "content": "# A2A • Verified and remaining\n\nHQ fixed unauthorized request exception handling and dispatcher bridge prefix mismatch; focused regressions pass.\n\nSaved R4 export semantics and DO checks have separate dated evidence. Full n8n node execution, real Dispatcher identity/transport/result ingress, provider binding and dashboard integration remain qualification gates.",
+        "width": 560,
+        "height": 360,
+        "color": 4
+      }
+    },
+    {
+      "id": "f084863d-959c-4844-9171-f393a6e2cd87",
+      "name": "A2A • Ownership and evidence",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        -1000
+      ],
+      "parameters": {
+        "content": "# A2A • Ownership and evidence\n\nHistorical intended roles: Dispatcher A orders; Claude B implements; Claude C independently reviews; Vera integrates. No task is launched by these notes.\n\nUnsupported attachments/MMS reject before commit. Do not treat an archive hash, synthetic completion, or roster bubble as live execution.",
+        "width": 560,
+        "height": 360,
+        "color": 5
+      }
+    }
+  ],
+  "connections": {
+    "Email + SMS committed reference": {
+      "main": [
+        [
+          {
+            "node": "Validate reference",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate reference": {
+      "main": [
+        [
+          {
+            "node": "Reference valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reference valid?": {
+      "main": [
+        [
+          {
+            "node": "Ledger lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject or unavailable response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ledger lookup": {
+      "main": [
+        [
+          {
+            "node": "Durable consumer acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Adapter failure response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Durable consumer acceptance": {
+      "main": [
+        [
+          {
+            "node": "Fenced routing claim",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Adapter failure response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fenced routing claim": {
+      "main": [
+        [
+          {
+            "node": "Approval and exact route",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Adapter failure response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval and exact route": {
+      "main": [
+        [
+          {
+            "node": "Result and held reconciliation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Adapter failure response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Result and held reconciliation": {
+      "main": [
+        [
+          {
+            "node": "Respond durable state",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Adapter failure response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adapter failure response": {
+      "main": [
+        [
+          {
+            "node": "Reject or unavailable response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 120,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveExecutionProgress": false,
+    "saveManualExecutions": false
+  },
+  "pinData": {},
+  "tags": []
+}

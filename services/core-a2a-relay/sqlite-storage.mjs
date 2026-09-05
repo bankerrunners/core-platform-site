@@ -1,0 +1,7 @@
+// Local engine adapter for the same KV transaction methods used by SQLite-backed A2AJob.
+import {DatabaseSync} from 'node:sqlite';
+export class SQLiteStorage {
+ constructor(file){this.db=new DatabaseSync(file);this.db.exec('PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)');this.queue=Promise.resolve();this.failAfter=null;}
+ async transaction(fn){const run=async()=>{this.db.exec('BEGIN IMMEDIATE');let writes=0;const get=async k=>{const row=this.db.prepare('SELECT v FROM kv WHERE k=?').get(k);return row?JSON.parse(row.v):undefined};const put=async(k,v)=>{if(this.failAfter!==null&&writes++>=this.failAfter)throw new Error('SYNTHETIC_DISK_FAILURE');this.db.prepare('INSERT INTO kv VALUES (?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v').run(k,JSON.stringify(v))};const tx={get,put,delete:async k=>this.db.prepare('DELETE FROM kv WHERE k=?').run(k),list:async({prefix})=>new Map(this.db.prepare('SELECT k,v FROM kv WHERE substr(k,1,?)=? ORDER BY k').all(prefix.length,prefix).map(r=>[r.k,JSON.parse(r.v)])),setAlarm:async n=>put('_alarm',n),getAlarm:()=>get('_alarm'),deleteAlarm:async()=>this.db.prepare('DELETE FROM kv WHERE k=?').run('_alarm')};try{const result=await fn(tx);this.db.exec('COMMIT');return result}catch(e){this.db.exec('ROLLBACK');throw e}};const next=this.queue.then(run,run);this.queue=next.catch(()=>{});return next;}
+ close(){this.db.close()}
+}
