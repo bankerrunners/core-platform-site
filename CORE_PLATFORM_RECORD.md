@@ -2926,6 +2926,192 @@ connector-URL owner confirmation remain open and require separate review.
 
 **Timestamp:** 2026-09-04 (America/Chicago)
 
+#### HQ follow-up: connector recovery and approved-task writes — 2026-09-04
+
+**Direct observations:** HQ opened the owner-linked Claude Code session
+`session_01MwGuvK4QLhgygwUe5MLs8P` in the Chrome Bank profile and verified its title,
+`Worker B(heavy)`. The other signed-in browser account could not access that
+session; no new session or replacement worker was created.
+
+The existing `CORE Relay — Worker B` connector detail showed the full configured
+URL `https://core-a2a-relay.thrive18.workers.dev/mcp`, matching D-019. It initially
+offered `Re-authorize`. One supported reauthorization completed without manual
+credential entry; the same connector then displayed `Connected` and the six tools
+listed in D-020. No additional tool or expanded permission was selected. This
+directly verifies the configured endpoint and the connector UI state at that
+checkpoint. A subsequent one-call read-only check in the exact session failed
+before obtaining a relay response. Message 23 reports:
+`No such tool available: mcp__CORE_Relay_Worker_B__worker_d_allowed_app_status`.
+
+After Shawn requested automatic handling, HQ used the supported session control
+Add > Connectors to toggle the existing CORE Relay attachment off, then on, and
+verified it checked again. One post-recovery check produced the same error in
+message 25; HQ inspected the expanded tool-call detail showing `app_name: Cursor`
+and that error. No further retry was issued. The session menu exposed no restart
+or reconnect action. Worker B reports that the tools remain absent from its
+session registry; this explanation is agent-reported, while the failed tool
+detail is directly observed. Current end-to-end health and the six requested
+gate values remain unverified. D-020 and D-021 retain their earlier successful
+call evidence, which must not be presented as the current result.
+
+**Owner decision:** When asked whether Worker B should have read-only relay access
+or retain bounded sandbox writes, Shawn chose: "Keep sandbox writes for approved
+tasks." Preserve `worker_d_sandbox_text_write` availability for explicitly approved
+tasks. This decision is not itself an order to write a particular artifact, nor
+authority to write outside the existing sandbox. Worker B's own coding workspace
+and Worker A/Dispatch's sole operational order/verdict lane remain distinct.
+
+**Automatic continuation:** Shawn asked HQ to make this process fully automatic.
+Within this active assignment, HQ carries exact-target verification, supported
+recovery, bounded read-only verification, evidence recording, and already
+approved follow-on work through without routine proceed questions. Reuse scoped
+authorization and bundle genuine unresolved decisions. A failed check is a
+blocker, not a completion signal: preserve the exact error and resume only after
+new evidence of a corrected attachment. This policy does not grant additional
+privileges, create another worker/session, or establish recurring monitoring.
+
+**Local-source review:** Worker D's `scaffold/src/pilot.ts` lists PowerShell in
+`ALLOWED_APPS`, but its status functions hardcode app-control, read, write,
+send/submit, and credential-field gates false. `scaffold/src/index.ts` registers
+the allowlist tool as a reporting function. Source inspected at
+`C:\Users\k2547\OneDrive\Desktop\Main Office\Worker A ( M Office)\Worker D (Local)\MCP`
+does not make the allowlist an executable app-control grant. Removing the entry
+would change reported eligibility, not revoke an active control capability.
+This is local-source evidence, not verification of the currently loaded build.
+
+**Remaining review:** PowerShell requires separate review before any future app
+activation; no activation or allowlist edit is needed for the owner's sandbox
+decision. Broader GitHub/remote-session capability restrictions remain open.
+Maintaining the disabled app-control gates is a continuing constraint. Merge,
+new session creation, deployment, and other consequential
+actions still need their applicable scoped authority. No permission narrowing,
+app activation, repository commit/push, deployment, or MCP write was performed in
+this follow-up. The recovery observations add evidence without issuing a Dispatch
+verdict or recreating D-020/D-021.
+
+**Approved repair-plan execution — 2026-09-05 00:24 UTC (September 4 local):**
+Shawn subsequently authorized one temporary read-only diagnostic session if
+supported recovery could not restore the original session. This supersedes the
+earlier prohibition on creating that single diagnostic session only.
+
+The original cloud slash-command menu did not expose `/mcp`. Worker B's bounded
+diagnostic report gives runtime `2.1.261 (Claude Code)`, no relay tools in its
+current registry, and ListConnectors state `connected: true`,
+`enabledInChat: false`. HQ used the conversation's CORE Relay `Use` card once;
+Worker B's subsequent report still showed the same disabled-in-chat state. No
+further relay call was attempted in the original session. These internal status
+and version values are Worker B's report, not direct access by HQ to its runtime.
+
+HQ created exactly one diagnostic session, titled `CORE Relay diagnostic check`:
+https://claude.ai/code/session_01RtZVeHfj6wY5Epwq6wqCYS
+The launch UI confirmed the same Chrome Bank account, `Vera Portal Control`
+environment, `AgenCi-MAIN/core-platform-site` repository,
+`vera-central-control-system` branch, Fable 5.1 / Low, and the existing relay
+connector checked. The environment had no setup script; no environment setting
+was changed. The diagnostic prompt prohibited shell commands, repository reads
+or writes, scratchpad writes, other service calls, and consequential actions.
+
+The diagnostic reported all six current `mcp__CORE_Relay_Worker_B__worker_d_*`
+identifiers and made one allowed-app-status call for Cursor. HQ inspected the
+expanded discovery entry and actual tool-call detail. The exact returned error
+was `{"jsonrpc":"2.0","id":2,"error":{"code":-32004,"message":"Worker D offline"}}`.
+No gate fields were returned, and no retry was made. The session is finished and
+idle, retained as evidence, and has not replaced Worker B.
+
+**Current conclusion:** the fresh session can discover the relay and receive a
+relay error; the original session's registry remains unavailable. End-to-end
+health is not established in either session. Local relay source at
+`cloudflare-a2a-relay/src/index.ts` returns `Worker D offline` when its connector
+WebSocket is absent or not open; this explains the local implementation's error
+condition, without proving the deployed revision or the local process cause.
+Per the approved plan's failure stop, no additional diagnostic sessions, retry
+loops, service restarts, credential changes, deployment, or sandbox writes were
+performed. Next recovery requires diagnosing/restoring the existing Worker D
+connector and restoring the original session attachment, followed by a successful
+Cursor status check in the original session. The original session is not repaired.
+
+**Local availability follow-up:** A subsequent read-only process inspection found
+no running process matching the existing connector entry point or saved launcher
+(excluding the inspection shell itself). No matching scheduled task was returned;
+the existing `CORE Worker D HTTPS Connector.lnk` Startup shortcut remains present.
+The last recorded connector activity was a completed inventory call at
+2026-09-04T21:57:59.853Z. Old ONLINE entries are not current health evidence.
+The saved launcher at `%LOCALAPPDATA%\CoreWorkerD\start-connector.ps1` still
+references the canonical gateway, expected connector entry point and Worker D
+server, and existing DPAPI-protected credential file. Launcher SHA-256:
+`711D49A57636D1A75A839F6AFAA14C0AE6593007208DEAD3ECC9CC414C08CF1A`.
+No credential was decrypted. HQ presented the owner one decision popup to start
+that existing connector and verify the original session, because that runtime
+start goes beyond the approved plan's diagnostic-failure stop. Approval is pending;
+no start, retry, or additional session was performed.
+
+**Owner-approved connector start and remaining attachment failure:** Shawn
+answered `i approve` to the pending start-and-verify request. HQ rechecked that
+no existing connector instance was running and the launcher SHA-256 was unchanged,
+then started the saved launcher hidden. Launcher PID 28712 and connector Node
+PID 32876 were observed alive; a fresh `connector / ONLINE` log entry appeared at
+2026-09-05T00:41:40.541Z. The original saved credentials and permissions were used
+without changes. No new service installation, scheduled task, or worker identity
+was created. This supersedes the pending-start state above.
+
+HQ reloaded the original session. It reported a resumed environment, but its
+keyword discovery and then exact
+`select:mcp__CORE_Relay_Worker_B__worker_d_allowed_app_status` discovery both found
+no matching deferred tool. HQ inspected the keyword discovery detail directly;
+the exact-selection result is recorded in the session response. ListConnectors
+was reported as connected with enabledInChat false, while HQ directly observed
+the session's Add > Connectors relay checkbox still checked. No missing tool was
+invoked, and no further attachment toggle was performed.
+
+A bounded read-only configuration inspection by Worker B found no relay-related
+disable/deny rule or duplicate local MCP server in its standard user/project
+settings, launcher settings, and auth-cache names. This is Worker B's diagnostic
+report; it supports a host/session attachment discrepancy, not a proven vendor
+root cause. The original session still lacks the required tool and has not
+returned a Cursor status result. The existing connector is running; its ONLINE
+event alone is not end-to-end verification. The single diagnostic session remains
+idle and has not been retried or promoted. Remaining recovery requires restoring
+the original cloud session's host-managed attachment through a supported control
+or provider repair, then verifying the original-session Cursor call. No source,
+credential, permission, deployment, or sandbox-write changes were made.
+
+**Supported-control check:** The full `/mcp` command did appear when typed in the
+original session, correcting the earlier inference from the initial menu. In this
+cloud interface, submitting it opened the account connector directory rather
+than a runtime status or reconnect interface. The relay detail showed Connected
+and six tools; no additional session-repair control was exposed. The Cloud menu
+only identified the environment. No reconnect argument or repeated toggle was
+issued. A sanitized provider-support draft is saved in the HQ evidence directory
+as `CLAUDE-RELAY-SUPPORT-DRAFT.md`; it has not been sent. Original-session tool
+availability and the required Cursor status result remain unresolved.
+
+**Support submission:** Shawn explicitly approved sending the sanitized provider
+report. HQ submitted it through the signed-in Anthropic support messenger under
+Technical Issues/Errors, conversation `215475799611932`. The message readback
+showed Seen. HQ requested human Product Support and clarified that the connector
+previously worked in the original hosted Claude Code session. Fin acknowledged
+that it would connect the conversation to the human support team. No human
+response or repaired attachment has been observed. No conversation transcript,
+repository files, credentials, or screenshot attachments were submitted. This
+supersedes the unsent-report state above. Continue in the same support conversation
+when a provider response or other attachment-state change is available; the
+original-session verification remains incomplete.
+
+**New authentication-state recovery attempt:** The owner supplied a screenshot
+and asked to try the original session. Fresh session readback showed Worker B
+reporting that the relay had progressed from absent to connecting, then required
+authentication. HQ used the existing connector's supported Disconnect and Connect
+to Claude controls once, with no manual credential entry or expanded scope. The
+same named connector returned to Connected with the expected six tools. HQ
+reloaded the original session and requested exact tool discovery plus one Cursor
+call only if callable. Worker B returned no matching deferred tools; it reported
+no new host notice superseding the earlier authentication-required notice. No
+relay invocation occurred. Thus the reconnect is verified at the connector UI,
+but original-session authentication/tool availability remains unresolved. No
+additional session or retry loop was created. The existing support case remains
+the escalation path; this new evidence supersedes an assumption that the original
+session never receives any attachment notice.
+
 ---
 
 ### D-020. Worker B post-rotation relay verification — 2026-09-04
@@ -2950,3 +3136,11 @@ directory. This record contains no replacement token or other credential value.
 permission, migration, or MCP write change occurred during the verification.
 
 **Timestamp:** 2026-09-04 (America/Chicago)
+
+### Account A relay verification - 2026-09-04 - latest result
+
+- Worker B(heavy), original session session_01MwGuvK4QLhgygwUe5MLs8P: PASS for read-only MCP relay connectivity. Browser-inspected actual worker_d_allowed_app_status("Cursor") result returned READY_OWNER_GATE; control_enabled, read_enabled, write_enabled, send_or_submit, credential_fields all false; requires_fresh_owner_approval true. Six relay tools reported loaded. This supersedes prior original-session tool-unavailable status. Recovery cause is not established.
+- Worker C-Under Office, original session session_01K4o78iujDSfbUreEWCMSZf: PASS for the same read-only MCP relay check; actual expanded tool result inspected with the same verdict and gate values. It used CORE_Relay_Worker_B, not an independently verified Worker C principal. Role isolation and sandbox-write enforcement were not tested.
+- Both tests were requested through existing browser chats, each MCP call allowed once. Browser prompt delivery is not MCP dispatch.
+- A2A preflight: BLOCKED / round trip NOT RUN. Worker C reports no direct Worker B task-send/reply tool. Local relay source defines only the five Worker D read tools and one sandbox text write tool, consistent with the observed six-tool contract. No worker-session recipient routing or correlated reply tool is present in that contract. Do not mark A2A passed from shared relay access.
+- Next condition: identify an existing authorized MCP task transport with verified B/C recipient bindings, or present a bounded implementation proposal for owner review. No settings, credentials, worker roles, deployment, or sandbox artifacts changed; diagnostic session preserved idle.
