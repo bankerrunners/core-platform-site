@@ -3196,4 +3196,16 @@ This repository's relay copy was not deleted, and the Office changes were not
 ported here. Observed while listing organization repositories and not acted on:
 `core-platform-site` is public (`private=false`).
 
+**Addendum, later on 2026-09-06 — PR #2 merged on owner instruction.** The owner
+directed: "Review PR #2's evidence files for private information, then merge it."
+Review, on all 1,590 lines of the nine evidence files plus the README: no
+credential values, no email addresses, phone numbers, session identifiers,
+key-shaped strings, or IP addresses. Present and judged acceptable for a private
+repository: the owner's first name in two n8n sticky-note texts; a Windows
+username inside two historical checkout paths; one login-gated n8n editor URL;
+and the intake webhook's path (`core-worker-dispatch-candidate-v1`, header-auth)
+inside the workflow export — the one item that would matter if masterswitch were
+ever made public. Squash-merged as masterswitch `194befa`; branch deleted. Still
+not done: deployment, credential, binding, or permission change of any kind.
+
 **Timestamp:** 2026-09-06 (America/Chicago)

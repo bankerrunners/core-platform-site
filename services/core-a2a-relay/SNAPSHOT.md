@@ -14,6 +14,7 @@ edits recorded in `b2cbd95` (2026-09-05): TypeScript import extensions in
 that landed in masterswitch on 2026-09-06.
 
 Do not edit here. Fix and release from masterswitch. The release evidence under
-`docs/release-evidence/` was ported to masterswitch on 2026-09-06 (branch
-`relay/port-evidence-and-test-wiring`) blob-identical, and stays here as a
-dated record of the 2026-09-05 integration.
+`docs/release-evidence/` was ported to masterswitch blob-identical and merged to
+its `main` on 2026-09-06 as `194befa` (PR #2, owner-authorized after a privacy
+review recorded in `CORE_PLATFORM_RECORD.md` D-022). It stays here as a dated
+record of the 2026-09-05 integration.
