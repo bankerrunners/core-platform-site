@@ -3144,3 +3144,56 @@ permission, migration, or MCP write change occurred during the verification.
 - Both tests were requested through existing browser chats, each MCP call allowed once. Browser prompt delivery is not MCP dispatch.
 - A2A preflight: BLOCKED / round trip NOT RUN. Worker C reports no direct Worker B task-send/reply tool. Local relay source defines only the five Worker D read tools and one sandbox text write tool, consistent with the observed six-tool contract. No worker-session recipient routing or correlated reply tool is present in that contract. Do not mark A2A passed from shared relay access.
 - Next condition: identify an existing authorized MCP task transport with verified B/C recipient bindings, or present a bounded implementation proposal for owner review. No settings, credentials, worker roles, deployment, or sandbox artifacts changed; diagnostic session preserved idle.
+
+---
+
+### D-022. CORE A2A relay canonical home is masterswitch — 2026-09-06
+
+**Decision:** The owner decided on 2026-09-06, in the native Claude Code session
+`core-platform-site-b9`, that the canonical home of the CORE A2A relay source is
+`https://github.com/AgenCi-MAIN/masterswitch`, path `services/core-a2a-relay`,
+branch `main`. This repository's `services/core-a2a-relay/` is a labeled
+snapshot (see `services/core-a2a-relay/SNAPSHOT.md`) and must not be edited or
+released from. The standalone `core-a2a-relay` repository
+(`codex/worker-d-status-release@23a2d658`) is the shared ancestor of both copies.
+
+**How the question arose:** A local session on the owner's machine cloned
+masterswitch at 17:56 (America/Chicago), committed `608dc67` and `5c66429`
+("Consolidate CORE relay and Office messaging into MasterSwitch"), and pushed to
+`main` by 18:03. Its `CONSOLIDATION.md` states "the owner requested consolidation
+into AgenCi-MAIN/masterswitch". No such decision existed in this record or in
+DEPLOYMENT.md at that time, and no CCD session transcript contains the request,
+so the originating session is not identified (likely a Codex lane). The owner's
+decision recorded here is the authorization; the earlier claim is superseded by
+it, not verified.
+
+**State verified (blob level, GitHub trees API, 2026-09-06):** Both copies descend
+from `core-a2a-relay@23a2d658` (32 files under `cloudflare-a2a-relay/`).
+masterswitch `5c66429` = ancestor + six Office-messaging edits (`src/index.ts`,
+`src/mailbox.ts`, `src/inbox-identity.ts`, `test/main-office.test.ts`,
+`test/main-office-gateway.test.ts`, `wrangler.toml` adding
+`MCP_OFFICE_OAUTH_CLIENT_SHA256`) + `test/office-mailbox.test.ts` +
+`CONSOLIDATION.md`. This repository's `b2cbd95` = ancestor + three edits (`.ts`
+import extensions in `src/index.ts`, `npm test` wiring in `package.json`,
+`test/main-office-gateway.test.ts`) + `README.md` + nine files under
+`docs/release-evidence/`. The `src/index.ts` edit here is contained in
+masterswitch's version; there is no conflicting change. masterswitch's
+`package.json` did not run `notification-runtime-tests.mjs` or
+`worker-d-status-tests.mjs` although both files were consolidated.
+
+**Actions taken (this session):** (1) Opened masterswitch PR #2 from branch
+`relay/port-evidence-and-test-wiring` (`1a1c60c`): the nine evidence files
+(blob-identical to `b2cbd95`, verified with `git ls-tree`), a README written for
+masterswitch containing only claims verified there, and the one-line `npm test`
+wiring. Verified in a fresh clone on Node 24.19.0: `npm ci`, `tsc --noEmit`
+clean, 46/46 tests pass (43 before wiring). The live `C:\dev\masterswitch`
+checkout, which held another session's uncommitted work, was not touched.
+(2) Added `services/core-a2a-relay/SNAPSHOT.md` here. (3) This entry.
+
+**Not done / boundaries:** PR #2 is not merged; merge requires the owner's "mi".
+No deployment, credential, wrangler binding, migration, or permission change.
+This repository's relay copy was not deleted, and the Office changes were not
+ported here. Observed while listing organization repositories and not acted on:
+`core-platform-site` is public (`private=false`).
+
+**Timestamp:** 2026-09-06 (America/Chicago)
