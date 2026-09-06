@@ -1,0 +1,35 @@
+name = "core-a2a-relay"
+main = "src/index.ts"
+compatibility_date = "2025-09-17"
+workers_dev = true
+preview_urls = false
+
+[durable_objects]
+bindings = [
+  { name = "A2A_JOB", class_name = "A2AJob" },
+  { name = "MCP_PIPE", class_name = "MCPPipe" },
+  { name = "OAUTH_STATE", class_name = "OAuthState" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["A2AJob"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["MCPPipe"]
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["OAuthState"]
+
+[vars]
+MAX_JOB_BYTES = "262144"
+JOB_TTL_SECONDS = "900"
+MCP_CALL_TIMEOUT_MS = "30000"
+MCP_MAX_REQUEST_BYTES = "1048576"
+MCP_MAX_RESULT_BYTES = "2097152"
+GITHUB_ALLOWED_LOGIN = "AgenCi-MAIN"
+MCP_MAIN_OFFICE_MESSAGES_ENABLED = "true"
+MCP_CODEX_OAUTH_CLIENT_SHA256 = "7063882e7e49d5e81feffd5228b3c4b0b451100fa50f191f21dd68e59eab5205"
+MCP_CLAUDE_DESKTOP_OAUTH_CLIENT_SHA256 = "893bdc5e9a39838813124615fffccae2aab16a0a1e52a33a96fccf13cf8e4b7f"

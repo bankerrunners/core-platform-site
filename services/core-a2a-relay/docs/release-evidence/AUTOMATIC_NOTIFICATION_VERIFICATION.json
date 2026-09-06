@@ -1,0 +1,90 @@
+{
+  "verifiedAt": "2026-09-05T20:14:13.816Z",
+  "testKind": "synthetic signed fixtures; real production backend-to-n8n notification",
+  "rows": [
+    {
+      "channel": "email",
+      "source": "synthetic-signed-diagnostic",
+      "intakeStatus": 202,
+      "reference": {
+        "contract": "core.intake-reference.v1",
+        "identityRef": "mcp-helper",
+        "eventId": "diagnostic-155b3452-6603-4cdd-b80f-bbba380532a0",
+        "receiptRef": "d641d0bb3b8251405d30dcb6dc3f35f8c9b0ca6b52cdf6d65edafe74ab9c2b98",
+        "correlationId": "51d0ddce-5c6d-49be-9be3-23c0f174fadf",
+        "channel": "email"
+      },
+      "committed": true,
+      "lookupStatus": 200,
+      "lookup": {
+        "reference": {
+          "contract": "core.intake-reference.v1",
+          "identityRef": "mcp-helper",
+          "eventId": "diagnostic-155b3452-6603-4cdd-b80f-bbba380532a0",
+          "receiptRef": "d641d0bb3b8251405d30dcb6dc3f35f8c9b0ca6b52cdf6d65edafe74ab9c2b98",
+          "correlationId": "51d0ddce-5c6d-49be-9be3-23c0f174fadf",
+          "channel": "email"
+        },
+        "acceptance": {
+          "key": "d641d0bb3b8251405d30dcb6dc3f35f8c9b0ca6b52cdf6d65edafe74ab9c2b98",
+          "correlationId": "51d0ddce-5c6d-49be-9be3-23c0f174fadf",
+          "workflow": "core-worker-dispatch-r4",
+          "acceptedAt": 1788639200372
+        },
+        "task": {
+          "key": "d641d0bb3b8251405d30dcb6dc3f35f8c9b0ca6b52cdf6d65edafe74ab9c2b98",
+          "correlationId": "51d0ddce-5c6d-49be-9be3-23c0f174fadf",
+          "channel": "email",
+          "state": "held",
+          "reason": "DISPATCHER_ORDER_REQUIRED",
+          "owner": "Dispatcher A",
+          "resumeCondition": "Approved scope, deadline, budget decision and verified exact ingress",
+          "createdAt": 1788639197752,
+          "updatedAt": 1788639200726
+        }
+      }
+    },
+    {
+      "channel": "sms",
+      "source": "synthetic-signed-diagnostic",
+      "intakeStatus": 202,
+      "reference": {
+        "contract": "core.intake-reference.v1",
+        "identityRef": "mcp-helper",
+        "eventId": "diagnostic-510485fc-321e-4d4a-b03c-b0b9e4d8124a",
+        "receiptRef": "42d4bb1d0b92fc675f86f5609e284cc47ada8fb492c7fe02b2b33064752360a4",
+        "correlationId": "93198bcd-7206-42af-84ff-9c925b2b4c89",
+        "channel": "sms"
+      },
+      "committed": true,
+      "lookupStatus": 200,
+      "lookup": {
+        "reference": {
+          "contract": "core.intake-reference.v1",
+          "identityRef": "mcp-helper",
+          "eventId": "diagnostic-510485fc-321e-4d4a-b03c-b0b9e4d8124a",
+          "receiptRef": "42d4bb1d0b92fc675f86f5609e284cc47ada8fb492c7fe02b2b33064752360a4",
+          "correlationId": "93198bcd-7206-42af-84ff-9c925b2b4c89",
+          "channel": "sms"
+        },
+        "acceptance": {
+          "key": "42d4bb1d0b92fc675f86f5609e284cc47ada8fb492c7fe02b2b33064752360a4",
+          "correlationId": "93198bcd-7206-42af-84ff-9c925b2b4c89",
+          "workflow": "core-worker-dispatch-r4",
+          "acceptedAt": 1788639232714
+        },
+        "task": {
+          "key": "42d4bb1d0b92fc675f86f5609e284cc47ada8fb492c7fe02b2b33064752360a4",
+          "correlationId": "93198bcd-7206-42af-84ff-9c925b2b4c89",
+          "channel": "sms",
+          "state": "held",
+          "reason": "DISPATCHER_ORDER_REQUIRED",
+          "owner": "Dispatcher A",
+          "resumeCondition": "Approved scope, deadline, budget decision and verified exact ingress",
+          "createdAt": 1788639198044,
+          "updatedAt": 1788639233077
+        }
+      }
+    }
+  ]
+}

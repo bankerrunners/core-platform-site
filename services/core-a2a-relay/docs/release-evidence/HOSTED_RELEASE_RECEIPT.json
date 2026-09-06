@@ -1,0 +1,60 @@
+{
+  "checkedAt": "2026-09-05T20:15:06.844Z",
+  "sourceCommit": "f42d18a367a79aa0e040a9ee037b82a05f8eab3a",
+  "sourceCheckout": "C:\\Users\\k2547\\OneDrive\\Documents\\ChatGPT\\Master-control-worker-d-release",
+  "worker": "core-a2a-relay",
+  "deployedVersion": "6ef3b8e7-426f-4a22-9e27-7bd93d560cab",
+  "deployment": "deployed with existing vars preserved; base commit plus notification redirect repair captured in this release snapshot",
+  "health": "GATEWAY_READY_CONNECTOR_ONLINE",
+  "unauthenticatedConsumer": 401,
+  "inkbox": "Two Dasher subscriptions verified: message.received and text.received. Protected signing key bound in backend; provider SMS replay returned 202 committed.",
+  "n8n": "Published. Notify credential bound to trigger; Consumer credential bound to five HTTP nodes. Both real references returned durable production responses.",
+  "providerDeliveryVerified": true,
+  "otherWorkersResumed": false,
+  "smsReceipt": "0d7ddced652bf60f6e810fadc27cc8ad7a6baf35343031df06b0dff3a96ffa6c",
+  "emailDeliveryVerified": true,
+  "historicalUnconfiguredProbes": {
+    "email": 400,
+    "sms": 400,
+    "dispatcher": 503
+  },
+  "productionWebhookAuth": {
+    "unauthenticated": 403,
+    "authenticated": 200
+  },
+  "workerD": {
+    "mode": "live-worker-d-status",
+    "receiptRef": "0d7ddced652bf60f6e810fadc27cc8ad7a6baf35343031df06b0dff3a96ffa6c",
+    "correlationId": "808bb4eb-34ab-443a-b197-f48148ddba99",
+    "state": "completed",
+    "reviewer": "hq-review",
+    "independentReadback": true,
+    "workerInvocations": 1
+  },
+  "automaticNotification": {
+    "verified": true,
+    "evidence": "AUTOMATIC_NOTIFICATION_VERIFICATION.json",
+    "inputs": "synthetic signed fixtures; actual backend-to-n8n calls",
+    "email": true,
+    "sms": true
+  },
+  "recovery": {
+    "reference": {
+      "contract": "core.intake-reference.v1",
+      "identityRef": "mcp-helper",
+      "eventId": "a2f3bf62-d3eb-46c4-96fb-e91633dc7363",
+      "receiptRef": "3ea481c0954567ea8897ec914ef823077c3216e59d8ff6533b5ef728c7e173b5",
+      "correlationId": "7ce1a886-96a3-47c7-a835-da76201dfe12",
+      "channel": "sms"
+    },
+    "status": 200,
+    "state": "held",
+    "reason": "DISPATCHER_ORDER_REQUIRED"
+  },
+  "limitations": [
+    "Status-only Worker D pilot; general worker execution is not enabled.",
+    "Incoming tasks remain held for explicit approval.",
+    "Review uses the shared Dispatcher credential; reviewer separation is an application rule.",
+    "Release snapshot is prepared for commit; push requires a confirmed repository destination."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "at": "2026-09-05T19:23:01.323Z",
+  "state": "completed",
+  "executionMode": "live-worker-d-status",
+  "calls": 1,
+  "intake": "synthetic HQ diagnostic",
+  "transport": "attended Codex MCP tool invocation",
+  "hostedN8nExecuted": false,
+  "observation": {
+    "status": "READY_FOR_BOUNDED_TEST",
+    "transport": "stdio",
+    "network_listener": false,
+    "desktop_control": false,
+    "capability": "worker_d_pilot_status",
+    "evidence_root_configured": true
+  },
+  "receiptRef": "532b0db5cf93877c031b8642980ea898c50ed762354492a78eacf2d51bc76dae",
+  "correlationId": "0653aa1e-17d3-4075-96b6-dc945b633551"
+}

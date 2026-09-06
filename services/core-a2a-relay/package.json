@@ -1,0 +1,24 @@
+{
+  "name": "core-cloudflare-a2a-relay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types test/*.test.ts notification-runtime-tests.mjs worker-d-status-tests.mjs",
+    "connector": "node connector/index.mjs",
+    "connector:install": "powershell -NoProfile -ExecutionPolicy Bypass -File connector/install.ps1"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "ws": "8.18.3"
+  },
+  "devDependencies": {
+    "@types/ws": "8.18.1",
+    "@cloudflare/workers-types": "4.20250917.0",
+    "typescript": "5.9.2",
+    "wrangler": "4.34.0"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "sourceCheckout": "C:/Users/k2547/.codex/worktrees/20ed/Master control/cloudflare-a2a-relay",
+  "sourceIndexSha256": "da3cb098b19c996129be76ba4a9af5411f9053658c8772fa9ffba4090a1cf305",
+  "candidateIndexSha256": "fb77684825a78886cc79bbfdf70c90ef2c5eabb417749e28454958bba5df32fb",
+  "deployed": false,
+  "newMigrations": false,
+  "workerDStatusEnabledByDefault": false
+}
