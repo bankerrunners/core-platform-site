@@ -132,6 +132,7 @@ const PROTECTED_ROUTES = [
   "/portal/shop",
   "/portal/team",
   "/portal/training",
+  "/portal/usage",
 ].map((pathname) => [pathname, encodeURIComponent(pathname)]);
 
 test("protected portal routes refuse anonymous visitors and render nothing", async () => {
@@ -2205,6 +2206,14 @@ test("the route guards are invariant: same call sites, same capabilities, same r
     "app/portal/tools/page.tsx|requireCapability|dashboard.view.self,/portal/tools",
     "app/portal/training/page.tsx|requireCapability|dashboard.view.self,/portal/training",
     "app/portal/twilio/page.tsx|requireCapability|leadership.view.all,/portal/twilio",
+    // Added with the AI usage widget. New guarded surface at the floor
+    // capability every member already holds, so it widens no one's reach. The
+    // provider behind it is deliberately unavailable — every field returns
+    // "unavailable" rather than a guessed counter — so the route exposes no
+    // member or account data today. Reviewed as a governance change, not
+    // slipped in as a nit; if a real usage bridge is ever connected, the
+    // capability on this route must be reconsidered at that time.
+    "app/portal/usage/route.ts|requireCapability|dashboard.view.self,/portal/usage",
   ], "a guard call site changed — this is an access-model change and needs its own review");
 
   // The capability matrix is pinned byte for byte. It changed ONCE on
