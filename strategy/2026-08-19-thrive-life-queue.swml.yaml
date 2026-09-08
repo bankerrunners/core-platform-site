@@ -11,6 +11,28 @@
 # mark the inbound path working until a real call to 5118 reaches the mobile.
 #
 # No recording, voicemail, transcription, or AI answering is enabled.
+#
+# 2026-08-20 addition (owner choice "b" — safe after-hours message-taker):
+# no AI receptionist. When the seat misses, the flow plays a disclosed message
+# and texts the founder the caller's number (${call.from}, from caller ID).
+# No recording, no voicemail, no PII beyond the number, and no path for the
+# flow to discuss insurance — the un-briefed-AI-on-a-licensed-line risk
+# (D4/A29) is designed out rather than mitigated.
+#
+# Capturing a spoken name was considered and declined: speech-to-text is
+# imperfect and risks PII, and voicemail reopens the A25 custody question.
+# The number alone is enough to return the call.
+#
+# Delivery caveat: US A2P SMS from a long code may require 10DLC
+# registration. If the notice text does not arrive, the missed call still
+# lands in the SignalWire call log, so the caller is not lost — only the
+# push notice is.
+#
+# Re-authored 2026-09-08 against the current single-seat serial hunt. The
+# original of this change (PR #108) was written against a three-number roster
+# and a flat miss path; both have since changed, so it is applied here to the
+# `connect_result != 'connected'` branch that replaced them. The roster itself
+# is untouched.
 ---
 version: 1.0.0
 sections:
@@ -45,6 +67,10 @@ sections:
         - when: "vars.connect_result != 'connected'"
           then:
             - play:
-                url: "say:I'm sorry, no one is available right now. Please try again shortly."
+                url: "say:You've reached Thrive Life, and no one is available right now. We already have your number, and a team member will call you back the next business day. Please note this message line does not give insurance quotes or advice. Thank you for calling."
                 say_voice: "amazon.Joanna:neural:en-US"
+            - send_sms:
+                from_number: "+12053513647"
+                to_number: "+14095492092"
+                body: "Thrive Life - missed call, call back: ${call.from}. Auto-notice (no answer / after hours). No advice given."
             - hangup: {}
