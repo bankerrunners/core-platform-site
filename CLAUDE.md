@@ -124,3 +124,11 @@ Development happens on Windows/PowerShell. Two things bite repeatedly: every new
 terminal starts in `C:\Users\k2547`, not the project; and npm scripts must stay
 free of Unix-only inline-env syntax (`FOO=bar cmd`), which cmd.exe cannot parse —
 that failure is silent and causes stale deploys.
+
+Native Windows UI automation has a separate recurring trap: the generic CUA
+surface may return browsers while reporting `apps: []`, even though the bundled
+native provider works. Before declaring Claude Desktop or another Windows app
+unavailable, follow [COMPUTER_USE_NATIVE_DESKTOP_RECOVERY.md](COMPUTER_USE_NATIVE_DESKTOP_RECOVERY.md).
+The verified path is the installed Computer Use skill's `node_repl` +
+`@oai/sky` provider, with a fresh `list_apps()` selection and exactly one
+returned target window.
