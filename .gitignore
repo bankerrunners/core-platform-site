@@ -18,6 +18,11 @@
 /.vinext/
 /out/
 
+# Build output of the nested app. The `/.next/` rule above is root-anchored, so
+# it does not reach this path; this entry is deliberately scoped to that one
+# directory rather than a global `**/.next/`.
+a-to-a-agency-0.0.1/.next/
+
 # misc
 .DS_Store
 *.pem
